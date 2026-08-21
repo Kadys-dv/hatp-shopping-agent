@@ -55,7 +55,10 @@ const server = http.createServer(async (req, res) => {
 
     const optionsDecisionId = decisionIdFrom(url.pathname, "/webauthn/options");
     if (req.method === "POST" && optionsDecisionId) {
-      return send(res, 200, await hatp.humanAuthorizationOptions(optionsDecisionId, await readJson(req)));
+      const options = await hatp.humanAuthorizationOptions(optionsDecisionId, await readJson(req));
+      const binding = checkout.bindHumanChallenge(optionsDecisionId, options.transactionHash);
+      if (binding.status !== "BOUND") return send(res, 409, binding);
+      return send(res, 200, options);
     }
     const completeDecisionId = decisionIdFrom(url.pathname, "/webauthn/complete");
     if (req.method === "POST" && completeDecisionId) {
