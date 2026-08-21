@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: hatp-shopping-agent-test
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: HATP_BASE_URL
+        sync: false
+      - key: HATP_API_KEY
+        sync: false
+      - key: HATP_HUMAN_VERIFY_API_KEY
+        sync: false
+      - key: HATP_ALLOW_INSECURE_HTTP
+        value: "false"
+      - key: SHOPPING_AGENT_ID
+        value: shopping-agent-physical-test-01
