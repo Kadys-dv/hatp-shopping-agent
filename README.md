@@ -54,7 +54,7 @@ The client sends the public HATP AP2 shape:
     "cryptographicallyVerified": true
   },
   "transaction": {
-    "id": "intent-...",
+    "id": "intent-001",
     "action": "PURCHASE",
     "amount": 199.90,
     "currency": "BRL"
@@ -86,14 +86,13 @@ HATP_BASE_URL=http://localhost:8080
 HATP_API_KEY=replace-with-test-api-key
 HATP_ALLOW_INSECURE_HTTP=true
 SHOPPING_AGENT_ID=shopping-agent-01
-SHOPPING_AGENT_DID=did:example:shopping-agent-01
-HATP_MANDATE_ID=shopping-demo-mandate
-HATP_MANDATE_EXPIRES_AT=2026-12-31T23:59:59Z
 ```
 
 ## Validation evidence
 
 Results produced by this repository must be described as **first-party validation**, not customer validation. External pilots should be tracked separately so simulated/reference results are never presented as real customer traffic.
+
+See `docs/validation-results.md` for the latest recorded first-party E2E result.
 
 ## Relationship to HATP
 
