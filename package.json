@@ -1,6 +1,6 @@
 {
   "name": "hatp-shopping-agent",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "First-party reference integration that validates HATP authorization through a simulated autonomous shopping agent.",
@@ -8,7 +8,11 @@
     "start": "node src/server.js",
     "test": "node --test",
     "test:e2e": "node scripts/e2e.mjs",
-    "check": "node --check src/server.js && node --check src/checkoutService.js && node --check src/hatpGateway.js && node --check scripts/e2e.mjs"
+    "test:webauthn:e2e": "node scripts/webauthn-e2e.mjs",
+    "check": "node --check src/server.js && node --check src/checkoutService.js && node --check src/hatpGateway.js && node --check scripts/e2e.mjs && node --check scripts/webauthn-e2e.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.0"
   },
   "engines": { "node": ">=20" }
 }
