@@ -17,32 +17,50 @@ test("executes only when HATP returns ALLOW", async () => {
 });
 
 test("keeps checkout pending when human verification is required", async () => {
-  const result = await service({ decisionId: "d2", decision: "HUMAN_REQUIRED", reason: "AUTONOMOUS_LIMIT_EXCEEDED", requiredVerification: "PASSKEY_FIDO", transactionHash: "hash-1" }).purchase({ productId: "monitor-001" });
+  const result = await service({ decisionId: "d2", decision: "HUMAN_REQUIRED", reason: "AUTONOMOUS_LIMIT_EXCEEDED", requiredVerification: "PASSKEY_FIDO" }).purchase({ productId: "monitor-001" });
   assert.equal(result.status, "PENDING_HUMAN");
-  assert.equal(result.hatp.transactionHash, "hash-1");
 });
 
-test("fails closed when HUMAN_REQUIRED is missing transaction binding", async () => {
-  const result = await service({ decisionId: "d2", decision: "HUMAN_REQUIRED", reason: "AUTONOMOUS_LIMIT_EXCEEDED" }).purchase({ productId: "monitor-001" });
+test("fails closed when HUMAN_REQUIRED is missing decision id", async () => {
+  const result = await service({ decision: "HUMAN_REQUIRED", reason: "AUTONOMOUS_LIMIT_EXCEEDED" }).purchase({ productId: "monitor-001" });
   assert.equal(result.status, "BLOCKED");
-  assert.equal(result.reason, "HATP_HUMAN_BINDING_MISSING");
+  assert.equal(result.reason, "HATP_HUMAN_DECISION_ID_MISSING");
 });
 
-test("executes a pending purchase only after matching human approval", async () => {
-  const s = service({ decisionId: "d-human", decision: "HUMAN_REQUIRED", reason: "AUTONOMOUS_LIMIT_EXCEEDED", transactionHash: "bound-hash" });
+test("executes a pending purchase only after challenge binding and matching approval", async () => {
+  const s = service({ decisionId: "d-human", decision: "HUMAN_REQUIRED", reason: "AUTONOMOUS_LIMIT_EXCEEDED" });
   const pending = await s.purchase({ productId: "monitor-001", transactionId: "human-tx" });
   assert.equal(pending.status, "PENDING_HUMAN");
+  assert.equal(s.bindHumanChallenge("d-human", "bound-hash").status, "BOUND");
   const completed = s.completeHumanApproval("d-human", { decisionId: "d-human", authorizationId: "auth-1", transactionHash: "bound-hash", status: "APPROVED" });
   assert.equal(completed.status, "EXECUTED");
   assert.equal(completed.transactionId, "human-tx");
 });
 
-test("blocks human approval when transaction hash does not match", async () => {
-  const s = service({ decisionId: "d-human", decision: "HUMAN_REQUIRED", reason: "AUTONOMOUS_LIMIT_EXCEEDED", transactionHash: "bound-hash" });
+test("blocks approval before a WebAuthn transaction hash is bound", async () => {
+  const s = service({ decisionId: "d-human", decision: "HUMAN_REQUIRED", reason: "AUTONOMOUS_LIMIT_EXCEEDED" });
   await s.purchase({ productId: "monitor-001", transactionId: "human-tx" });
+  const completed = s.completeHumanApproval("d-human", { decisionId: "d-human", authorizationId: "auth-1", transactionHash: "bound-hash", status: "APPROVED" });
+  assert.equal(completed.status, "BLOCKED");
+  assert.equal(completed.reason, "HATP_HUMAN_BINDING_MISSING");
+});
+
+test("blocks human approval when transaction hash does not match", async () => {
+  const s = service({ decisionId: "d-human", decision: "HUMAN_REQUIRED", reason: "AUTONOMOUS_LIMIT_EXCEEDED" });
+  await s.purchase({ productId: "monitor-001", transactionId: "human-tx" });
+  s.bindHumanChallenge("d-human", "bound-hash");
   const completed = s.completeHumanApproval("d-human", { decisionId: "d-human", authorizationId: "auth-1", transactionHash: "tampered-hash", status: "APPROVED" });
   assert.equal(completed.status, "BLOCKED");
   assert.equal(completed.reason, "TRANSACTION_BINDING_MISMATCH");
+});
+
+test("does not allow a WebAuthn challenge to rebind a pending purchase", async () => {
+  const s = service({ decisionId: "d-human", decision: "HUMAN_REQUIRED", reason: "AUTONOMOUS_LIMIT_EXCEEDED" });
+  await s.purchase({ productId: "monitor-001", transactionId: "human-tx" });
+  assert.equal(s.bindHumanChallenge("d-human", "bound-hash").status, "BOUND");
+  const rebound = s.bindHumanChallenge("d-human", "other-hash");
+  assert.equal(rebound.status, "BLOCKED");
+  assert.equal(rebound.reason, "TRANSACTION_BINDING_MISMATCH");
 });
 
 test("fails closed on DENY", async () => {
