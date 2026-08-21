@@ -37,9 +37,9 @@ test("uses a separate human verification key for WebAuthn endpoints", async () =
   assert.equal(captured.options.headers["x-hatp-api-key"], "human-key");
 });
 
-test("fails closed when a human verification key is not configured", async () => {
+test("fails closed when a human verification key is not configured", () => {
   const gateway = new HatpGateway({ baseUrl: "http://localhost:8080", apiKey: "runtime-key", allowInsecureHttp: true });
-  await assert.rejects(() => gateway.registerPasskeyOptions({ externalSubject: "x", displayName: "x" }), /HATP_HUMAN_VERIFY_API_KEY_REQUIRED/);
+  assert.throws(() => gateway.registerPasskeyOptions({ externalSubject: "x", displayName: "x" }), /HATP_HUMAN_VERIFY_API_KEY_REQUIRED/);
 });
 
 test("rejects insecure non-local HATP endpoints", () => {
