@@ -1,0 +1,13 @@
+{
+  "name": "hatp-shopping-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "First-party reference integration that validates HATP authorization through a simulated autonomous shopping agent.",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test",
+    "check": "node --check src/server.js && node --check src/checkoutService.js && node --check src/hatpGateway.js"
+  },
+  "engines": { "node": ">=20" }
+}
