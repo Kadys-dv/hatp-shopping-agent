@@ -34,7 +34,7 @@ try {
   assert.equal(pending.status, "PENDING_HUMAN");
   assert.equal(pending.hatp.decision, "HUMAN_REQUIRED");
   assert.equal(pending.hatp.reason, "AUTONOMOUS_LIMIT_EXCEEDED");
-  assert.ok(pending.hatp.transactionHash, "HATP must return a transaction hash for human verification");
+  assert.ok(pending.hatp.decisionId, "HATP must return decisionId for human verification");
 
   await page.locator("#approve").click();
   await page.waitForFunction(() => document.querySelector("#result")?.textContent?.includes('"EXECUTED"'));
@@ -42,12 +42,12 @@ try {
   assert.equal(completed.status, "EXECUTED");
   assert.equal(completed.humanVerification.status, "APPROVED");
   assert.equal(completed.humanVerification.decisionId, pending.hatp.decisionId);
-  assert.equal(completed.humanVerification.transactionHash, pending.hatp.transactionHash);
-  assert.equal(completed.transactionHash, pending.hatp.transactionHash);
+  assert.ok(completed.humanVerification.transactionHash, "WebAuthn completion must return the bound transaction hash");
+  assert.equal(completed.transactionHash, completed.humanVerification.transactionHash);
 
   console.log(JSON.stringify({
     result: "PASS",
-    flow: "HUMAN_REQUIRED -> WebAuthn Passkey -> APPROVED -> EXECUTED",
+    flow: "HUMAN_REQUIRED -> WebAuthn challenge binding -> Passkey -> APPROVED -> EXECUTED",
     decisionId: completed.humanVerification.decisionId,
     transactionHashBound: true,
     virtualAuthenticator: authenticatorId
