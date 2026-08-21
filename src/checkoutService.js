@@ -39,18 +39,29 @@ export class CheckoutService {
       return { status: "EXECUTED", ...purchase, hatp: decision };
     }
     if (decision.decision === "HUMAN_REQUIRED") {
-      if (!decision.decisionId || !decision.transactionHash) {
-        return { status: "BLOCKED", reason: "HATP_HUMAN_BINDING_MISSING", ...purchase, hatp: decision };
-      }
-      this.pendingByDecision.set(decision.decisionId, { ...purchase, transactionHash: decision.transactionHash });
+      if (!decision.decisionId) return { status: "BLOCKED", reason: "HATP_HUMAN_DECISION_ID_MISSING", ...purchase, hatp: decision };
+      this.pendingByDecision.set(decision.decisionId, { ...purchase, transactionHash: null });
       return { status: "PENDING_HUMAN", ...purchase, hatp: decision };
     }
     return { status: "BLOCKED", ...purchase, reason: decision.reason, hatp: decision };
   }
 
+  bindHumanChallenge(decisionId, transactionHash) {
+    const pending = this.pendingByDecision.get(decisionId);
+    if (!pending) return { status: "BLOCKED", reason: "PENDING_PURCHASE_NOT_FOUND", decisionId };
+    if (!transactionHash) return { status: "BLOCKED", reason: "HATP_HUMAN_BINDING_MISSING", decisionId };
+    if (pending.transactionHash && pending.transactionHash !== transactionHash) {
+      return { status: "BLOCKED", reason: "TRANSACTION_BINDING_MISMATCH", decisionId };
+    }
+    pending.transactionHash = transactionHash;
+    this.pendingByDecision.set(decisionId, pending);
+    return { status: "BOUND", decisionId, transactionHash };
+  }
+
   completeHumanApproval(decisionId, completion) {
     const pending = this.pendingByDecision.get(decisionId);
     if (!pending) return { status: "BLOCKED", reason: "PENDING_PURCHASE_NOT_FOUND", decisionId };
+    if (!pending.transactionHash) return { status: "BLOCKED", reason: "HATP_HUMAN_BINDING_MISSING", decisionId };
     if (!completion || completion.status !== "APPROVED" || completion.decisionId !== decisionId) {
       return { status: "BLOCKED", reason: "INVALID_HUMAN_APPROVAL", decisionId };
     }
